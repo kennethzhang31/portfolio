@@ -57,7 +57,7 @@
 @property --hero-muted-text {
   syntax: "<color>";
   inherits: true;
-  initial-value: #A8A492;
+  initial-value: #706E5C;
 }
 
 @property --hero-image-bg {
@@ -82,7 +82,7 @@
   --hero-layer-5: #655754;
   --hero-layer-6: #524646;
   --hero-accent-text: #524646;
-  --hero-muted-text: #A8A492;
+  --hero-muted-text: #706E5C;
   --hero-image-bg: #ffffff;
   transition:
     --background 700ms ease-in-out,

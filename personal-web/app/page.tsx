@@ -2,7 +2,10 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
+import type { PortfolioItem } from "@/lib/portfolio";
+import { createClient } from "@/lib/supabase/client";
+import profilePicture from "@/assets/profile_pic.png";
 
 const sections = [
   { id: "work", label: "Work" },
@@ -11,119 +14,16 @@ const sections = [
   { id: "media", label: "Media" },
 ];
 
-const workItems = [
-  {
-    title: "AI R&D Intern · LargitData",
-    period: "2025 – Present",
-    location: "Taipei, Taiwan",
-    description:
-      "Building production AI systems: RAG chatbots with OCR/ASR, text-to-SQL BI assistants with auto charting, and MCP-integrated AI agents.",
-    tags: ["RAG", "LLMs", "Django", "PostgreSQL", "MCP"],
-  },
-  {
-    title: "Research Assistant · CGV & MIS Lab, NTHU",
-    period: "2024 – Present",
-    location: "Hsinchu, Taiwan",
-    description:
-      "Working on multimodal sports analytics: player search from audio + faces and transformer-based sports highlight detection.",
-    tags: ["Computer Vision", "Whisper", "Transformers", "Sports Analytics"],
-  },
-  {
-    title: "Research Assistant · AINS Lab, NTHU",
-    period: "2025",
-    location: "Hsinchu, Taiwan",
-    description:
-      "Delivered LLM fine-tuning workshops and co-authored work on temporal correlation in large vision-language models.",
-    tags: ["LLMs", "Fine-tuning", "VLMs"],
-  },
-  {
-    title: "Teaching Assistant · Intro to Programming, NTHU",
-    period: "2025 – Present",
-    location: "Hsinchu, Taiwan",
-    description:
-      "Designed projects, supported lectures, and helped students build solid programming fundamentals.",
-    tags: ["Teaching", "Python", "CS Fundamentals"],
-  },
-];
+type BaseDisplayItem = {
+  title: string;
+  description: string;
+  tags: string[];
+  externalUrl?: string;
+  imageUrl?: string;
+};
 
-const projectItems = [
-  {
-    title: "QubicX – Multimodal AI Assistant",
-    year: "2025",
-    description:
-      "Desktop-like assistant that manages knowledge bases with RAG, plus OCR and ASR pipelines for documents, screenshots, and audio.",
-    tags: ["RAG", "LlamaIndex", "Django", "PostgreSQL", "Whisper"],
-  },
-  {
-    title: "Wisbi – ERP AI Assistant",
-    year: "2025",
-    description:
-      "Text-to-SQL assistant for ERP systems, combining RAG feedback loops with automated chart generation for self-service BI.",
-    tags: ["Text-to-SQL", "Django", "PostgreSQL", "LLMs"],
-  },
-  {
-    title: "Detect AI-Generated Text",
-    year: "2024",
-    description:
-      "Ensemble transformer classifier to detect AI-generated text, reaching 97.6% on a Kaggle benchmark.",
-    tags: ["Transformers", "PyTorch", "PEFT"],
-  },
-  {
-    title: "Virtual Try-On App",
-    year: "2024",
-    description:
-      "Mobile virtual try-on experience using image stitching, built with Flutter and a cloud backend.",
-    tags: ["Flutter", "Firestore", "Google Cloud"],
-  },
-];
-
-const reviewItems = [
-  {
-    title: "Book — The Pragmatic Programmer",
-    year: "2025",
-    description:
-      "Notes on craftsmanship, communication, and practical heuristics that aged surprisingly well.",
-    tags: ["Book", "Craft"],
-  },
-  {
-    title: "Film — Poor Things",
-    year: "2024",
-    description:
-      "Wild, maximalist, and tender. Design language and score are a playground.",
-    tags: ["Film", "Design"],
-  },
-  {
-    title: "Album — boygenius: the record",
-    year: "2023",
-    description:
-      "Rich harmonies with quietly devastating lyrics. On repeat while coding.",
-    tags: ["Album", "Indie"],
-  },
-];
-
-const mediaItems = [
-  {
-    title: "Talk — Building Practical RAG Systems",
-    year: "2025",
-    description:
-      "An opinionated overview of retrieval, chunking strategies, and evaluation with LLM-as-judge.",
-    tags: ["Talk", "RAG"],
-  },
-  {
-    title: "Post — Text-to-SQL with Feedback Loops",
-    year: "2025",
-    description:
-      "From schema linking to guardrails: turning one-off queries into reliable assistants.",
-    tags: ["Post", "Text-to-SQL"],
-  },
-  {
-    title: "Demo — Multimodal Notes Inbox",
-    year: "2024",
-    description:
-      "OCR + ASR pipeline to turn screenshots and voice memos into searchable notes.",
-    tags: ["Demo", "Multimodal"],
-  },
-];
+type WorkDisplayItem = BaseDisplayItem & { period: string; location: string };
+type DatedDisplayItem = BaseDisplayItem & { year: string };
 
 const heroPathX = [0, 137, 274, 411, 549, 686, 823, 960];
 const heroPathFillsLight = [
@@ -172,17 +72,108 @@ function getHeroPath(layer: number, progress: number) {
   return `${ridge}L960 541L823 541L686 541L549 541L411 541L274 541L137 541L0 541Z`;
 }
 
+function CardTitle({ item, className }: { item: BaseDisplayItem; className: string }) {
+  return item.externalUrl ? (
+    <a href={item.externalUrl} target="_blank" rel="noreferrer" className={`${className} hover:text-ternary`}>
+      {item.title}
+    </a>
+  ) : (
+    <h3 className={className}>{item.title}</h3>
+  );
+}
+
+function formatPortfolioDate(value: string | null) {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("en", { month: "short", year: "numeric" }).format(
+    new Date(`${value}T00:00:00`),
+  );
+}
+
+function formatDateRange(item: PortfolioItem) {
+  if (item.date_label) return item.date_label;
+  const start = formatPortfolioDate(item.start_date);
+  if (!start) return item.is_ongoing ? "Ongoing" : "";
+  const end = item.is_ongoing
+    ? item.category === "work" ? "Present" : "Ongoing"
+    : formatPortfolioDate(item.end_date);
+  return end ? `${start} – ${end}` : start;
+}
+
 export default function HomePage() {
   const [fadeProgress, setFadeProgress] = useState(0);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [activeSection, setActiveSection] = useState<string>("work");
-  const [sidebarOffset, setSidebarOffset] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [workContent, setWorkContent] = useState<WorkDisplayItem[]>([]);
+  const [projectContent, setProjectContent] = useState<DatedDisplayItem[]>([]);
+  const [reviewContent, setReviewContent] = useState<DatedDisplayItem[]>([]);
+  const [mediaContent, setMediaContent] = useState<DatedDisplayItem[]>([]);
   const heroPathFills = theme === "dark" ? heroPathFillsDark : heroPathFillsLight;
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
+
+  useEffect(() => {
+    async function loadPortfolio() {
+      const { data, error } = await createClient()
+        .from("portfolio_items")
+        .select("*")
+        .eq("published", true)
+        .order("sort_order", { ascending: true });
+
+      if (error || !data) return;
+      const items = [...(data as PortfolioItem[])].sort((a, b) => {
+        if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+        const aDate = a.category === "work" || a.category === "projects"
+          ? a.start_date
+          : a.published_date;
+        const bDate = b.category === "work" || b.category === "projects"
+          ? b.start_date
+          : b.published_date;
+        return (bDate ?? "").localeCompare(aDate ?? "");
+      });
+      const work = items.filter((item) => item.category === "work");
+      const projects = items.filter((item) => item.category === "projects");
+      const reviews = items.filter((item) => item.category === "reviews");
+      const media = items.filter((item) => item.category === "media");
+
+      setWorkContent(work.map((item) => ({
+          title: item.title,
+          period: formatDateRange(item),
+          location: item.location ?? "",
+          description: item.description,
+          tags: item.tags,
+          externalUrl: item.external_url ?? undefined,
+          imageUrl: item.image_url ?? undefined,
+        })));
+      setProjectContent(projects.map((item) => ({
+          title: item.title,
+          year: formatDateRange(item),
+          description: item.description,
+          tags: item.tags,
+          externalUrl: item.external_url ?? undefined,
+          imageUrl: item.image_url ?? undefined,
+        })));
+      setReviewContent(reviews.map((item) => ({
+          title: item.title,
+          year: item.date_label ?? formatPortfolioDate(item.published_date),
+          description: item.description,
+          tags: item.tags,
+          externalUrl: item.external_url ?? undefined,
+          imageUrl: item.image_url ?? undefined,
+        })));
+      setMediaContent(media.map((item) => ({
+          title: item.title,
+          year: item.date_label ?? formatPortfolioDate(item.published_date),
+          description: item.description,
+          tags: item.tags,
+          externalUrl: item.external_url ?? undefined,
+          imageUrl: item.image_url ?? undefined,
+        })));
+    }
+
+    void loadPortfolio();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -201,10 +192,6 @@ export default function HomePage() {
 
   // Scrollspy for active section and sidebar sync
   const calculateSidebarPosition = useCallback(() => {
-    if (!containerRef.current) return;
-
-    const container = containerRef.current;
-    const containerHeight = container.offsetHeight;
     const viewportCenter = window.innerHeight / 2;
     const centerY = window.scrollY + viewportCenter;
 
@@ -236,28 +223,6 @@ export default function HomePage() {
     }
 
     setActiveSection(sectionCenters[closestIndex].id);
-
-    // Map sections to sidebar positions: work (top), projects (middle), reviews, media (bottom)
-    const sectionPositions = [0, 0.5, 0.75, 1];
-    let sidebarProgress = sectionPositions[closestIndex];
-
-    // Interpolate between sections for smooth transition
-    if (closestIndex < sectionCenters.length - 1) {
-      const currentCenter = sectionCenters[closestIndex].center;
-      const nextCenter = sectionCenters[closestIndex + 1].center;
-      const range = nextCenter - currentCenter;
-
-      if (range > 0) {
-        const progress = Math.max(0, Math.min(1, (centerY - currentCenter) / range));
-        const currentPos = sectionPositions[closestIndex];
-        const nextPos = sectionPositions[closestIndex + 1];
-        sidebarProgress = currentPos + (nextPos - currentPos) * progress;
-      }
-    }
-
-    // Calculate sidebar offset (4% of container height for subtle, smooth movement)
-    const sidebarRange = containerHeight * 0.04;
-    setSidebarOffset(sidebarProgress * sidebarRange);
   }, []);
 
   useEffect(() => {
@@ -400,11 +365,11 @@ export default function HomePage() {
             </div>
             <div className="mt-6 md:mt-0">
               <Image
-                src="/globe.svg"
-                alt="Profile picture"
+                src={profilePicture}
+                alt="Kenneth Zhang"
                 width={180}
                 height={180}
-                className="rounded-xl bg-[var(--hero-image-bg)] p-4 ring-1 ring-fourth/60"
+                className="aspect-square rounded-xl object-cover ring-1 ring-fourth/60"
                 priority
               />
             </div>
@@ -415,7 +380,6 @@ export default function HomePage() {
       {(() => {
         return (
           <div
-            ref={containerRef}
             className="relative z-10 mx-[calc(50%-50vw)] -mb-12 min-h-[80vh] w-screen max-w-none space-y-10 rounded-none bg-fourth px-[15%] py-12 sm:rounded-t-2xl sm:py-16 md:px-[20%] md:py-20 lg:px-[25%] xl:px-[30%]"
           >
             <div className="md:grid md:grid-cols-12 md:gap-8">
@@ -425,58 +389,33 @@ export default function HomePage() {
                 className="hidden md:col-span-3 md:block"
               >
                 <div className="sticky top-24">
-                  <div 
-                    className="flex transition-transform duration-300 ease-out" 
-                    style={{ transform: `translateY(${sidebarOffset}px)` }}
-                  >
-                    {/* Rail + circles */}
-                    <div className="relative mr-4 flex h-[60vh] flex-col items-center justify-between py-4">
-                      <span
-                        aria-hidden
-                        className="absolute top-6 bottom-6 w-[2px] bg-secondary/60"
-                      />
-                      {sections.map((section) => {
-                        const isActive = activeSection === section.id;
-                        return (
-                          <button
-                            key={section.id}
-                            onClick={() => scrollToSection(section.id)}
-                            className="relative z-10 flex h-5 w-5 items-center justify-center"
-                            aria-label={section.label}
-                          >
-                            <span
-                              className={`h-3 w-3 rounded-full transition-transform duration-200 ${
-                                isActive
-                                  ? "scale-110 bg-ternary"
-                                  : "bg-secondary"
-                              }`}
-                            />
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Labels */}
-                    <ul className="flex h-[60vh] flex-col justify-between py-4 text-sm">
+                  <ul className="relative space-y-2 border-l border-secondary/35 py-1 text-sm">
                       {sections.map((section) => {
                         const isActive = activeSection === section.id;
                         return (
                           <li key={section.id}>
                             <button
                               onClick={() => scrollToSection(section.id)}
-                              className={`flex items-center text-left transition-colors ${
+                              className={`group relative flex w-full items-center rounded-r-xl py-3 pl-6 pr-3 text-left transition-all ${
                                 isActive
-                                  ? "text-ternary"
-                                  : "text-primary hover:text-ternary"
+                                  ? "bg-ternary/10 font-semibold text-ternary"
+                                  : "text-primary/70 hover:bg-fifth hover:text-primary"
                               }`}
                             >
+                              <span
+                                aria-hidden
+                                className={`absolute -left-[5px] h-[9px] w-[9px] rounded-full ring-4 ring-fourth transition-all ${
+                                  isActive
+                                    ? "scale-125 bg-ternary shadow-[0_0_0_4px_rgba(236,91,56,0.14)]"
+                                    : "bg-secondary group-hover:bg-ternary"
+                                }`}
+                              />
                               {section.label}
                             </button>
                           </li>
                         );
                       })}
-                    </ul>
-                  </div>
+                  </ul>
                 </div>
               </nav>
 
@@ -514,15 +453,16 @@ export default function HomePage() {
                     </p>
                   </div>
                   <div className="space-y-4">
-                    {workItems.map((item) => (
+                    {workContent.length === 0 && (
+                      <p className="rounded-xl bg-fifth p-4 text-sm text-primary/60">No published work entries yet.</p>
+                    )}
+                    {workContent.map((item) => (
                       <article
                         key={item.title}
                         className="rounded-xl border border-fourth bg-fourth p-4 shadow-sm transition hover:-translate-y-0.5 hover:bg-fifth hover:shadow-md"
                       >
                         <div className="flex flex-wrap items-baseline justify-between gap-2">
-                          <h3 className="text-lg font-semibold text-primary">
-                            {item.title}
-                          </h3>
+                          <CardTitle item={item} className="text-lg font-semibold text-primary" />
                           <span className="text-xs font-medium uppercase tracking-wide text-primary/60">
                             {item.period}
                           </span>
@@ -559,15 +499,16 @@ export default function HomePage() {
                     </p>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
-                    {projectItems.map((item) => (
+                    {projectContent.length === 0 && (
+                      <p className="rounded-xl bg-fifth p-4 text-sm text-primary/60 md:col-span-2">No published projects yet.</p>
+                    )}
+                    {projectContent.map((item) => (
                       <article
                         key={item.title}
                         className="flex flex-col rounded-xl border border-fourth bg-fourth p-4 shadow-sm transition hover:-translate-y-0.5 hover:bg-fifth hover:shadow-md"
                       >
                         <div className="flex items-baseline justify-between gap-2">
-                          <h3 className="text-base font-semibold text-primary">
-                            {item.title}
-                          </h3>
+                          <CardTitle item={item} className="text-base font-semibold text-primary" />
                           <span className="text-xs text-primary/60">
                             {item.year}
                           </span>
@@ -594,15 +535,16 @@ export default function HomePage() {
                 <section id="reviews" className="space-y-4">
                   <h2 className="text-2xl font-semibold text-ternary">Reviews</h2>
                   <div className="grid gap-4 md:grid-cols-2">
-                    {reviewItems.map((item) => (
+                    {reviewContent.length === 0 && (
+                      <p className="rounded-xl bg-fifth p-4 text-sm text-primary/60 md:col-span-2">No published reviews yet.</p>
+                    )}
+                    {reviewContent.map((item) => (
                       <article
                         key={item.title}
                         className="flex flex-col rounded-xl border border-fourth bg-fourth p-4 shadow-sm transition hover:-translate-y-0.5 hover:bg-fifth hover:shadow-md"
                       >
                         <div className="flex items-baseline justify-between gap-2">
-                          <h3 className="text-base font-semibold text-primary">
-                            {item.title}
-                          </h3>
+                          <CardTitle item={item} className="text-base font-semibold text-primary" />
                           <span className="text-xs text-primary/60">
                             {item.year}
                           </span>
@@ -629,15 +571,21 @@ export default function HomePage() {
                 <section id="media" className="space-y-4 pb-8">
                   <h2 className="text-2xl font-semibold text-ternary">Media</h2>
                   <div className="grid gap-4 md:grid-cols-2">
-                    {mediaItems.map((item) => (
+                    {mediaContent.length === 0 && (
+                      <p className="rounded-xl bg-fifth p-4 text-sm text-primary/60 md:col-span-2">No published media yet.</p>
+                    )}
+                    {mediaContent.map((item) => (
                       <article
                         key={item.title}
                         className="flex flex-col rounded-xl border border-fourth bg-fourth p-4 shadow-sm transition hover:-translate-y-0.5 hover:bg-fifth hover:shadow-md"
                       >
+                        {item.imageUrl && (
+                          <div className="relative mb-4 aspect-video overflow-hidden rounded-lg bg-fifth">
+                            <Image src={item.imageUrl} alt="" fill className="object-cover" unoptimized />
+                          </div>
+                        )}
                         <div className="flex items-baseline justify-between gap-2">
-                          <h3 className="text-base font-semibold text-primary">
-                            {item.title}
-                          </h3>
+                          <CardTitle item={item} className="text-base font-semibold text-primary" />
                           <span className="text-xs text-primary/60">
                             {item.year}
                           </span>

@@ -125,28 +125,73 @@ const mediaItems = [
   },
 ];
 
+const heroPathX = [0, 137, 274, 411, 549, 686, 823, 960];
+const heroPathFillsLight = [
+  "#a8a492",
+  "#998f81",
+  "#897c71",
+  "#776963",
+  "#655754",
+  "#524646",
+];
+const heroPathFillsDark = [
+  "#77727a",
+  "#68626b",
+  "#59525c",
+  "#4b444e",
+  "#3d363f",
+  "#302a32",
+];
+const heroPathStart = [
+  [374, 394, 398, 401, 403, 361, 414, 399],
+  [407, 428, 388, 429, 386, 399, 446, 413],
+  [462, 449, 455, 417, 437, 449, 465, 416],
+  [453, 441, 458, 484, 460, 469, 484, 445],
+  [468, 479, 475, 496, 471, 498, 482, 476],
+  [516, 506, 497, 495, 498, 509, 520, 515],
+];
+const heroPathEnd = [
+  [292, 322, 328, 332, 334, 273, 351, 329],
+  [340, 372, 313, 374, 310, 329, 399, 350],
+  [423, 404, 413, 357, 386, 404, 429, 355],
+  [410, 392, 417, 457, 420, 433, 457, 397],
+  [432, 449, 443, 475, 438, 478, 453, 444],
+  [505, 489, 476, 473, 478, 494, 510, 502],
+];
+
+function getHeroPath(layer: number, progress: number) {
+  const ridge = heroPathX
+    .map((x, index) => {
+      const startY = heroPathStart[layer][index];
+      const endY = heroPathEnd[layer][index];
+      const y = startY + (endY - startY) * progress;
+      return `${index === 0 ? "M" : "L"}${x} ${y}`;
+    })
+    .join("");
+
+  return `${ridge}L960 541L823 541L686 541L549 541L411 541L274 541L137 541L0 541Z`;
+}
+
 export default function HomePage() {
   const [fadeProgress, setFadeProgress] = useState(0);
-  const [heroOpacity, setHeroOpacity] = useState(1);
-  const [extraProgress, setExtraProgress] = useState(0);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [activeSection, setActiveSection] = useState<string>("work");
   const [sidebarOffset, setSidebarOffset] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const heroPathFills = theme === "dark" ? heroPathFillsDark : heroPathFillsLight;
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
 
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
       const viewport = window.innerHeight;
-      const progress = Math.min(scrollY / (viewport * 0.4), 1);
+      const rawProgress = Math.min(scrollY / (viewport * 0.7), 1);
+      const progress = rawProgress * rawProgress * (3 - 2 * rawProgress);
       
       setFadeProgress(progress);
-      setHeroOpacity(1 - progress);
-      
-      const extra = Math.max(
-        0,
-        Math.min((scrollY - viewport * 0.4) / (viewport * 0.4), 1)
-      );
-      setExtraProgress(extra);
     };
 
     handleScroll();
@@ -262,27 +307,59 @@ export default function HomePage() {
   };
 
   return (
-    <main className="mx-auto max-w-4xl space-y-12 px-4 py-12">
+    <main className="mx-auto max-w-4xl px-4 pb-12">
+      <button
+        type="button"
+        onClick={() => setTheme((current) => current === "light" ? "dark" : "light")}
+        className="fixed right-5 top-5 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-secondary/60 bg-fourth/90 shadow-md backdrop-blur transition hover:scale-105 hover:border-ternary"
+        aria-label={`Switch to ${theme === "light" ? "night" : "day"} mode`}
+        title={`Switch to ${theme === "light" ? "night" : "day"} mode`}
+      >
+        <Image
+          src={theme === "light" ? "/moon.svg" : "/sun.svg"}
+          alt=""
+          width={24}
+          height={24}
+          className={`transition duration-500 ${theme === "dark" ? "invert" : ""}`}
+        />
+      </button>
+
       {/* Hero / Intro */}
       <section
-        className="flex min-h-screen items-center transition-opacity duration-300"
-        style={{ opacity: heroOpacity }}
+        className="relative mx-[calc(50%-50vw)] flex min-h-screen w-screen items-center overflow-hidden"
       >
-        <div className="w-full">
-          <p className="text-sm uppercase tracking-[0.2em] text-ternary/60">
+        <div aria-hidden className="absolute inset-0 bg-[var(--hero-sky)]" />
+        <svg
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-20 h-full w-full"
+          viewBox="0 0 960 540"
+          preserveAspectRatio="xMidYMid slice"
+        >
+          {heroPathFills.map((fill, layer) => (
+            <path
+              key={layer}
+              d={getHeroPath(layer, fadeProgress)}
+              fill={fill}
+              className="transition-[fill] duration-1000 ease-in-out"
+            />
+          ))}
+        </svg>
+
+        <div className="relative z-10 mx-auto w-full max-w-4xl px-4">
+          <p className="text-sm uppercase tracking-[0.2em] text-[var(--hero-accent-text)]">
             Personal Website
           </p>
 
           <div className="md:flex md:items-center md:gap-8">
             <div className="flex-1 space-y-4">
               <h1 className="text-4xl font-bold sm:text-5xl">
-                <span className="text-ternary">K</span>
-                <span className="text-fourth">enneth</span>{" "}
-                <span className="text-ternary">Z</span>
-                <span className="text-fourth">hang</span>
+                <span className="text-[var(--hero-accent-text)]">K</span>
+                <span className="text-[var(--hero-muted-text)]">enneth</span>{" "}
+                <span className="text-[var(--hero-accent-text)]">Z</span>
+                <span className="text-[var(--hero-muted-text)]">hang</span>
               </h1>
 
-              <p className="max-w-2xl text-fourth/70">
+              <p className="max-w-2xl text-[var(--hero-muted-text)]">
                 Software engineer and ML practitioner working on RAG systems,
                 text-to-SQL, and multimodal pipelines. I like building things
                 that sit between research and production — tools that people
@@ -290,14 +367,14 @@ export default function HomePage() {
                 and music.
               </p>
 
-              <h2 className="text-xl font-semibold text-fourth">
+              <h2 className="text-xl font-semibold text-[var(--hero-muted-text)]">
                 Hsinchu / Taipei, Taiwan
               </h2>
 
-              <div className="flex flex-wrap gap-3 pt-2 text-sm text-fourth/60">
+              <div className="flex flex-wrap gap-3 pt-2 text-sm text-[var(--hero-muted-text)]">
                 <a
                   href="mailto:kennethzhang31@gmail.com"
-                  className="text-ternary underline underline-offset-4 hover:text-secondary"
+                  className="text-[var(--hero-accent-text)] underline underline-offset-4 hover:opacity-70"
                 >
                   kennethzhang31@gmail.com
                 </a>
@@ -306,7 +383,7 @@ export default function HomePage() {
                   href="https://github.com/kennethzhang31"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-ternary underline underline-offset-4 hover:text-secondary"
+                  className="text-[var(--hero-accent-text)] underline underline-offset-4 hover:opacity-70"
                 >
                   github.com/kennethzhang31
                 </a>
@@ -315,7 +392,7 @@ export default function HomePage() {
                   href="https://www.linkedin.com/in/kenneth-chandra-553a06238/"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-ternary underline underline-offset-4 hover:text-secondary"
+                  className="text-[var(--hero-accent-text)] underline underline-offset-4 hover:opacity-70"
                 >
                   linkedin.com/kennethzhang
                 </a>
@@ -327,7 +404,7 @@ export default function HomePage() {
                 alt="Profile picture"
                 width={180}
                 height={180}
-                className="bg-white rounded-xl p-4 ring-1 ring-fourth/60"
+                className="rounded-xl bg-[var(--hero-image-bg)] p-4 ring-1 ring-fourth/60"
                 priority
               />
             </div>
@@ -336,21 +413,10 @@ export default function HomePage() {
       </section>
 
       {(() => {
-        const containerProgress = Math.max(
-          0,
-          Math.min(1, (fadeProgress - 0.2) / 0.6),
-        );
-        const containerTranslate = 48 * (1 - containerProgress);
-        const extraRaiseVh = 20 * extraProgress;
-
         return (
           <div
             ref={containerRef}
-            className="mx-[calc(50%-50vw)] -mb-12 min-h-[80vh] w-screen max-w-none space-y-10 rounded-none bg-fourth px-[15%] py-12 sm:rounded-2xl sm:py-16 md:px-[20%] md:py-20 lg:px-[25%] xl:px-[30%]"
-            style={{
-              transform: `translateY(${containerTranslate}px)`,
-              marginTop: `-${extraRaiseVh}vh`,
-            }}
+            className="relative z-10 mx-[calc(50%-50vw)] -mb-12 min-h-[80vh] w-screen max-w-none space-y-10 rounded-none bg-fourth px-[15%] py-12 sm:rounded-t-2xl sm:py-16 md:px-[20%] md:py-20 lg:px-[25%] xl:px-[30%]"
           >
             <div className="md:grid md:grid-cols-12 md:gap-8">
               {/* Sidebar nav (desktop) */}

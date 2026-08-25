@@ -1,13 +1,101 @@
 @import "tailwindcss";
 
+@property --background {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #FCF2E5;
+}
+
+@property --foreground {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #171717;
+}
+
+@property --primary {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #1D1616;
+}
+
+@property --secondary {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #A63A24;
+}
+
+@property --ternary {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #EC5B38;
+}
+
+@property --fourth {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #EEEEEE;
+}
+
+@property --fifth {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #e7e4e4;
+}
+
+@property --hero-sky {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #FCF2E5;
+}
+
+@property --hero-accent-text {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #524646;
+}
+
+@property --hero-muted-text {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #A8A492;
+}
+
+@property --hero-image-bg {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ffffff;
+}
+
 :root {
-  --background: #ffffff;
+  --background: #FCF2E5;
   --foreground: #171717;
   --primary: #1D1616;
-  --secondary: #8E1616;
-  --ternary: #D84040;
+  --secondary: #A63A24;
+  --ternary: #EC5B38;
   --fourth: #EEEEEE;
   --fifth: #e7e4e4;
+  --hero-sky: #FCF2E5;
+  --hero-layer-1: #a8a492;
+  --hero-layer-2: #998f81;
+  --hero-layer-3: #897c71;
+  --hero-layer-4: #776963;
+  --hero-layer-5: #655754;
+  --hero-layer-6: #524646;
+  --hero-accent-text: #524646;
+  --hero-muted-text: #A8A492;
+  --hero-image-bg: #ffffff;
+  transition:
+    --background 700ms ease-in-out,
+    --foreground 700ms ease-in-out,
+    --primary 700ms ease-in-out,
+    --secondary 700ms ease-in-out,
+    --ternary 700ms ease-in-out,
+    --fourth 700ms ease-in-out,
+    --fifth 700ms ease-in-out,
+    --hero-sky 700ms ease-in-out,
+    --hero-accent-text 700ms ease-in-out,
+    --hero-muted-text 700ms ease-in-out,
+    --hero-image-bg 700ms ease-in-out;
 }
 
 @theme inline {
@@ -22,11 +110,24 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+[data-theme="dark"] {
+  --background: #171415;
+  --foreground: #f2ece8;
+  --primary: #f2ece8;
+  --secondary: #b8442a;
+  --ternary: #ff7150;
+  --fourth: #262122;
+  --fifth: #332c2d;
+  --hero-sky: #171415;
+  --hero-layer-1: #77727a;
+  --hero-layer-2: #68626b;
+  --hero-layer-3: #59525c;
+  --hero-layer-4: #4b444e;
+  --hero-layer-5: #3d363f;
+  --hero-layer-6: #302a32;
+  --hero-accent-text: #ffb29f;
+  --hero-muted-text: #d0c9c2;
+  --hero-image-bg: #eee7e2;
 }
 
 body {

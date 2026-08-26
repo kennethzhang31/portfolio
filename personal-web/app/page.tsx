@@ -363,7 +363,7 @@ export default function HomePage() {
                 </a>
               </div>
             </div>
-            <div className="mt-6 md:mt-0">
+            <div className="hidden md:mt-0 md:block">
               <Image
                 src={profilePicture}
                 alt="Kenneth Zhang"

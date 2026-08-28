@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useEffect, useState, useCallback } from "react";
 import type { PortfolioItem } from "@/lib/portfolio";
 import { createClient } from "@/lib/supabase/client";
-import profilePicture from "@/assets/profile_pic.png";
 
 const sections = [
   { id: "work", label: "Work" },
@@ -364,13 +363,10 @@ export default function HomePage() {
               </div>
             </div>
             <div className="hidden md:mt-0 md:block">
-              <Image
-                src={profilePicture}
-                alt="Kenneth Zhang"
-                width={180}
-                height={180}
-                className="aspect-square rounded-xl object-cover ring-1 ring-fourth/60"
-                priority
+              <div
+                className="celestial-profile"
+                role="img"
+                aria-label={theme === "light" ? "Sun" : "Crescent moon"}
               />
             </div>
           </div>

@@ -135,3 +135,39 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.celestial-profile {
+  position: relative;
+  width: 11.25rem;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: var(--hero-accent-text);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--hero-accent-text) 35%, transparent);
+  transition:
+    background-color 700ms ease-in-out,
+    box-shadow 700ms ease-in-out;
+}
+
+.celestial-profile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--hero-sky);
+  transform: translate(110%, -25%);
+  transition:
+    background-color 700ms ease-in-out,
+    transform 700ms ease-in-out;
+}
+
+[data-theme="dark"] .celestial-profile::after {
+  transform: translate(32%, -18%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .celestial-profile,
+  .celestial-profile::after {
+    transition: none;
+  }
+}
